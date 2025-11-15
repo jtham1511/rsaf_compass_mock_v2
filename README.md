@@ -14,7 +14,11 @@
 ```bash
 python3 compass_simulator.py
 ```
-Choose a level, follow the prompts. Results save in `sessions/`.
+Choose a mode:
+- **Full session** – runs the full ~90 min flow with warm-ups and breaks.
+- **Practice** – opens a menu so you can launch any module individually. Each practice run saves its own JSON file in `sessions/` (similar to the optional joystick tracker).
+
+You can also skip the prompt via `python3 compass_simulator.py --mode practice` or `--mode session`.
 
 **Optional analog**
 ```bash

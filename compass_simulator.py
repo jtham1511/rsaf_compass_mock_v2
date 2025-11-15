@@ -331,6 +331,24 @@ def mod_verbal(duration, level):
     score = scaled_score(acc, mean_rt, tgt_rt=2.0/level["speed"])
     return {"acc":acc,"mean_rt":mean_rt,"score":score,"n":len(trials)}
 
+
+MODULES = [
+    ("1", "control", "Control", mod_control),
+    ("2", "slalom", "Slalom", mod_slalom),
+    ("3", "memory", "Memory", mod_memory),
+    ("4", "task_manager", "Task Manager", mod_task_manager),
+    ("5", "orientation", "Orientation", mod_orientation),
+    ("6", "mathematics", "Mathematics", mod_math),
+    ("7", "technical", "Technical", mod_technical),
+    ("8", "verbal", "Verbal", mod_verbal),
+]
+
+MODULE_MAP = {}
+for mid, code, label, fn in MODULES:
+    MODULE_MAP[mid] = (code, label, fn)
+    MODULE_MAP[code] = (code, label, fn)
+
+
 # --- History & percentiles ---
 def load_past_sessions(limit=10):
     os.makedirs("sessions", exist_ok=True)
@@ -450,6 +468,83 @@ def run_session(cfg):
     write_simple_pdf(pdf_path, lines, title="RSAF COMPASS Mock — Session Summary")
     print(f"PDF saved: {pdf_path}")
 
+
+def save_practice_result(module_code, module_label, level_label, duration, result):
+    os.makedirs("sessions", exist_ok=True)
+    ts = now_ts()
+    payload = {
+        "timestamp": ts,
+        "module": module_code,
+        "module_label": module_label,
+        "level": level_label,
+        "duration_seconds": duration,
+        "result": result,
+    }
+    path = f"sessions/practice_{module_code}_{ts}.json"
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+    print(f"Saved practice result to {path}")
+
+
+def practice_menu(cfg):
+    print("=== RSAF COMPASS Practice Menu ===")
+    lvl = input(" Level 1=Basic 2=Standard 3=Hard [2]: ").strip() or "2"
+    if lvl not in cfg["levels"]:
+        lvl = "2"
+    level = cfg["levels"][lvl]
+    print(f" Practising at level: {level['label']}")
+
+    durations = cfg["durations_seconds"]
+    history = []
+
+    while True:
+        print("\nSelect a module to practise:")
+        for mid, _, label, _ in MODULES:
+            print(f" {mid}. {label}")
+        print(" Q. Quit practice")
+        print(" (Type the number or module name)")
+
+        if history:
+            last_choice, last_result = history[-1]
+            _, label, _ = MODULE_MAP[last_choice]
+            print(
+                f" Last result — {label}: score={last_result['score']:.1f}"
+                f" acc={last_result['acc']:.1f}% rt={last_result['mean_rt']:.2f}s"
+            )
+
+        raw_choice = input(" Choice: ").strip().lower()
+        choice = raw_choice.replace(" ", "_")
+        if choice in {"q", "quit", "exit"}:
+            break
+        if choice not in MODULE_MAP:
+            print(" Invalid choice. Try again.")
+            continue
+
+        module_code, module_label, fn = MODULE_MAP[choice]
+        duration = durations.get(module_code, 300)
+        result = fn(duration, level)
+        history.append((choice, result))
+        print(
+            f"\nResult — {module_label}: score={result['score']:.1f}"
+            f" acc={result['acc']:.1f}% mean_rt={result['mean_rt']:.2f}s trials={result['n']}"
+        )
+        save_practice_result(module_code, module_label, level["label"], duration, result)
+        try:
+            input(" Press Enter to return to the menu...")
+        except EOFError:
+            pass
+
+    if history:
+        print("\nPractice summary:")
+        for idx, (code, res) in enumerate(history, 1):
+            _, label, _ = MODULE_MAP[code]
+            print(
+                f" {idx:>2}. {label:12s} score={res['score']:.1f}"
+                f" acc={res['acc']:.1f}% rt={res['mean_rt']:.2f}s n={res['n']}"
+            )
+    print(" Goodbye!")
+
+
 def load_cfg(path):
     cfg = DEFAULT_CONFIG.copy()
     if path and os.path.exists(path):
@@ -465,9 +560,17 @@ def load_cfg(path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=None)
+    ap.add_argument("--mode", choices=["session", "practice"], default=None)
     args = ap.parse_args()
     cfg = load_cfg(args.config)
-    run_session(cfg)
+    mode = args.mode
+    if mode is None:
+        choice = (input(" Mode 1=Full session 2=Practice [1]: ").strip() or "1").lower()
+        mode = "practice" if choice in {"2", "p", "practice"} else "session"
+    if mode == "practice":
+        practice_menu(cfg)
+    else:
+        run_session(cfg)
 
 if __name__ == "__main__":
     main()
