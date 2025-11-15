@@ -1,0 +1,46 @@
+{
+  "session": {
+    "warmup_seconds": 120,
+    "break_seconds": 120
+  },
+  "weights": {
+    "control": 0.18,
+    "slalom": 0.12,
+    "memory": 0.12,
+    "task_manager": 0.18,
+    "orientation": 0.14,
+    "mathematics": 0.1,
+    "technical": 0.08,
+    "verbal": 0.08
+  },
+  "durations_seconds": {
+    "control": 420,
+    "slalom": 360,
+    "memory": 420,
+    "task_manager": 480,
+    "orientation": 480,
+    "mathematics": 420,
+    "technical": 420,
+    "verbal": 360
+  },
+  "levels": {
+    "1": {
+      "label": "Basic",
+      "speed": 0.9,
+      "span": 4,
+      "math": "easy"
+    },
+    "2": {
+      "label": "Standard",
+      "speed": 1.0,
+      "span": 6,
+      "math": "mix"
+    },
+    "3": {
+      "label": "Hard",
+      "speed": 1.2,
+      "span": 7,
+      "math": "hard"
+    }
+  }
+}
